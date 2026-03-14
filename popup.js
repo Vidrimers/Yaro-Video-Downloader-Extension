@@ -39,7 +39,9 @@
             noTrackInfo: 'Нет информации о треках',
             noInfo: 'Не удалось получить информацию',
             noSegmentsForInfo: 'Нет сегментов для анализа. Запишите видео сначала.',
-            mp4BuilderNotInit: 'MP4Builder не инициализирован. Начните запись сегментов.'
+            mp4BuilderNotInit: 'MP4Builder не инициализирован. Начните запись сегментов.',
+            recordingStarted: 'Запись начата',
+            recordingStopped: 'Запись остановлена'
         },
         en: {
             segments: 'Segments',
@@ -72,7 +74,9 @@
             noTrackInfo: 'No track information',
             noInfo: 'Failed to get information',
             noSegmentsForInfo: 'No segments to analyze. Record video first.',
-            mp4BuilderNotInit: 'MP4Builder not initialized. Start recording segments.'
+            mp4BuilderNotInit: 'MP4Builder not initialized. Start recording segments.',
+            recordingStarted: 'Recording started',
+            recordingStopped: 'Recording stopped'
         }
     };
 
@@ -296,28 +300,58 @@
 
     // Начать запись сегментов
     function startRecording() {
-        chrome.runtime.sendMessage(
-            { type: "START_RECORDING", tabId: currentTabId },
-            (response) => {
-                if (response?.success) {
-                    console.log('Запись начата');
-                    updateStatus();
+        if (!currentTabId) {
+            showNotification('Ошибка: не удалось определить текущий таб', 'error');
+            return;
+        }
+
+        if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+            chrome.runtime.sendMessage(
+                { type: "START_RECORDING", tabId: currentTabId },
+                (response) => {
+                    if (chrome.runtime.lastError) {
+                        console.error('Ошибка начала записи:', chrome.runtime.lastError);
+                        showNotification('Ошибка начала записи', 'error');
+                        return;
+                    }
+                    if (response?.success) {
+                        console.log('[Recording] Запись начата для таба', currentTabId);
+                        showNotification(t('recordingStarted'), 'success');
+                        updateStatus();
+                    }
                 }
-            }
-        );
+            );
+        } else {
+            showNotification('Chrome API недоступен', 'error');
+        }
     }
 
     // Остановить запись
     function stopRecording() {
-        chrome.runtime.sendMessage(
-            { type: "STOP_RECORDING", tabId: currentTabId },
-            (response) => {
-                if (response?.success) {
-                    console.log('Запись остановлена');
-                    updateStatus();
+        if (!currentTabId) {
+            showNotification('Ошибка: не удалось определить текущий таб', 'error');
+            return;
+        }
+
+        if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+            chrome.runtime.sendMessage(
+                { type: "STOP_RECORDING", tabId: currentTabId },
+                (response) => {
+                    if (chrome.runtime.lastError) {
+                        console.error('Ошибка остановки записи:', chrome.runtime.lastError);
+                        showNotification('Ошибка остановки записи', 'error');
+                        return;
+                    }
+                    if (response?.success) {
+                        console.log('[Recording] Запись остановлена для таба', currentTabId);
+                        showNotification(t('recordingStopped'), 'success');
+                        updateStatus();
+                    }
                 }
-            }
-        );
+            );
+        } else {
+            showNotification('Chrome API недоступен', 'error');
+        }
     }
 
     // Скачать собранные сегменты
