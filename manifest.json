@@ -1,0 +1,36 @@
+{
+  "manifest_version": 3,
+  "name": "Yaro Video Downloader",
+  "version": "1.0",
+  "description": "Скачивает обычные видео и собирает защищённые сегменты в MP4.",
+  "permissions": [
+    "downloads",
+    "scripting",
+    "activeTab",
+    "storage",
+    "*://*/*"
+  ],
+  "host_permissions": [
+    "*://*/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Video Downloader"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["injector.js"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
