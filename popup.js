@@ -4,6 +4,159 @@
 
     let currentTabId = null;
     let updateInterval = null;
+    let currentLang = 'ru'; // По умолчанию русский
+
+    // Переводы
+    const translations = {
+        ru: {
+            segments: 'Сегменты',
+            videos: 'Видео',
+            rec: 'ЗАПИСЬ',
+            detectedVideos: 'Обнаруженные видео',
+            noVideos: 'Видео не найдены<br>Откройте страницу с видео',
+            start: 'Начать',
+            stop: 'Стоп',
+            download: 'Скачать',
+            clear: 'Очистить',
+            mp4Info: 'Инфо MP4',
+            direct: 'ПРЯМАЯ ССЫЛКА',
+            stream: 'ПОТОК',
+            downloadSuccess: '✅ Видео скачано: ',
+            downloadError: '❌ Ошибка: ',
+            noSegments: 'Нет сегментов для скачивания',
+            clearConfirm: 'Очистить все собранные данные?',
+            dataCleared: '✅ Данные очищены',
+            mp4InfoTitle: '📊 Информация о MP4:',
+            duration: '🎬 Длительность: ',
+            tracks: '📹 Треков: ',
+            brand: '📦 Бренд: ',
+            track: 'Трек',
+            type: 'Тип',
+            codec: 'Codec',
+            resolution: 'Разрешение',
+            channels: 'Каналов',
+            sampleRate: 'Sample rate',
+            noTrackInfo: 'Нет информации о треках',
+            noInfo: 'Не удалось получить информацию',
+            noSegmentsForInfo: 'Нет сегментов для анализа. Запишите видео сначала.',
+            mp4BuilderNotInit: 'MP4Builder не инициализирован. Начните запись сегментов.'
+        },
+        en: {
+            segments: 'Segments',
+            videos: 'Videos',
+            rec: 'REC',
+            detectedVideos: 'Detected Videos',
+            noVideos: 'No videos detected<br>Open a page with video content',
+            start: 'Start',
+            stop: 'Stop',
+            download: 'Download',
+            clear: 'Clear',
+            mp4Info: 'MP4 Info',
+            direct: 'DIRECT',
+            stream: 'STREAM',
+            downloadSuccess: '✅ Video downloaded: ',
+            downloadError: '❌ Error: ',
+            noSegments: 'No segments to download',
+            clearConfirm: 'Clear all collected data?',
+            dataCleared: '✅ Data cleared',
+            mp4InfoTitle: '📊 MP4 Information:',
+            duration: '🎬 Duration: ',
+            tracks: '📹 Tracks: ',
+            brand: '📦 Brand: ',
+            track: 'Track',
+            type: 'Type',
+            codec: 'Codec',
+            resolution: 'Resolution',
+            channels: 'Channels',
+            sampleRate: 'Sample rate',
+            noTrackInfo: 'No track information',
+            noInfo: 'Failed to get information',
+            noSegmentsForInfo: 'No segments to analyze. Record video first.',
+            mp4BuilderNotInit: 'MP4Builder not initialized. Start recording segments.'
+        }
+    };
+
+    // Функция перевода
+    function t(key) {
+        return translations[currentLang][key] || key;
+    }
+
+    // Применение переводов
+    function applyTranslations() {
+        console.log('[Lang] Применяем переводы для языка:', currentLang);
+        
+        document.querySelectorAll('[data-i18n]').forEach(element => {
+            const key = element.getAttribute('data-i18n');
+            const translation = t(key);
+            
+            if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
+                element.placeholder = translation;
+            } else {
+                // Для элементов с HTML (например, noVideos с <br>)
+                if (translation.includes('<br>')) {
+                    element.innerHTML = translation;
+                } else {
+                    element.textContent = translation;
+                }
+            }
+        });
+        
+        // Обновляем title кнопок
+        const downloadBtns = document.querySelectorAll('.btn-download');
+        downloadBtns.forEach(btn => {
+            btn.setAttribute('title', t('download'));
+        });
+        
+        console.log('[Lang] Переводы применены');
+    }
+
+    // Сохранение языка
+    function saveLanguage(lang) {
+        currentLang = lang;
+        console.log('[Lang] Язык изменён на:', lang);
+        
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+            chrome.storage.local.set({ language: lang }, () => {
+                console.log('[Lang] Язык сохранён в chrome.storage');
+                applyTranslations();
+            });
+        } else {
+            // Fallback - используем localStorage
+            localStorage.setItem('language', lang);
+            console.log('[Lang] Язык сохранён в localStorage');
+            applyTranslations();
+        }
+    }
+
+    // Загрузка языка
+    function loadLanguage() {
+        // Проверяем доступность chrome.storage
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+            chrome.storage.local.get(['language'], (result) => {
+                currentLang = result.language || 'ru';
+                
+                // Обновляем активную кнопку
+                document.querySelectorAll('.lang-btn').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.lang === currentLang);
+                });
+                
+                // Применяем переводы
+                applyTranslations();
+            });
+        } else {
+            // Fallback - используем localStorage
+            currentLang = localStorage.getItem('language') || 'ru';
+            console.log('[Lang] Используем localStorage, язык:', currentLang);
+            
+            // Обновляем активную кнопку
+            document.querySelectorAll('.lang-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.lang === currentLang);
+            });
+            
+            // Применяем переводы
+            applyTranslations();
+        }
+    }
 
     // Элементы UI
     const elements = {
@@ -21,31 +174,43 @@
 
     // Получение текущего таба
     async function getCurrentTab() {
-        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-        return tab;
+        if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.query) {
+            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            return tab;
+        } else {
+            console.warn('[Video Downloader] chrome.tabs API недоступен');
+            return null;
+        }
     }
 
     // Обновление статуса
     async function updateStatus() {
         try {
             const tab = await getCurrentTab();
-            if (!tab) return;
+            if (!tab) {
+                console.warn('[Video Downloader] Не удалось получить текущий таб');
+                return;
+            }
 
             currentTabId = tab.id;
 
-            chrome.runtime.sendMessage(
-                { type: "GET_STATUS", tabId: currentTabId },
-                (response) => {
-                    if (chrome.runtime.lastError) {
-                        console.error('Ошибка получения статуса:', chrome.runtime.lastError);
-                        return;
-                    }
+            if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+                chrome.runtime.sendMessage(
+                    { type: "GET_STATUS", tabId: currentTabId },
+                    (response) => {
+                        if (chrome.runtime.lastError) {
+                            console.error('Ошибка получения статуса:', chrome.runtime.lastError);
+                            return;
+                        }
 
-                    if (response) {
-                        updateUI(response);
+                        if (response) {
+                            updateUI(response);
+                        }
                     }
-                }
-            );
+                );
+            } else {
+                console.warn('[Video Downloader] chrome.runtime API недоступен');
+            }
         } catch (error) {
             console.error('Ошибка обновления статуса:', error);
         }
@@ -84,7 +249,7 @@
                     <svg class="empty-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M15 10L19.553 7.724C20.237 7.382 21 7.867 21 8.618V15.382C21 16.133 20.237 16.618 19.553 16.276L15 14M5 18H13C14.105 18 15 17.105 15 16V8C15 6.895 14.105 6 13 6H5C3.895 6 3 6.895 3 8V16C3 17.105 3.895 18 5 18Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
-                    <div class="empty-text">No videos detected<br>Open a page with video content</div>
+                    <div class="empty-text" data-i18n="noVideos">${t('noVideos')}</div>
                 </div>
             `;
             return;
@@ -102,10 +267,10 @@
                         ${escapeHtml(video.title)}
                     </div>
                     <div class="video-type">
-                        <span class="type-badge">${video.type === 'direct' ? 'DIRECT' : 'STREAM'}</span>
+                        <span class="type-badge">${video.type === 'direct' ? t('direct') : t('stream')}</span>
                     </div>
                 </div>
-                <button class="btn btn-download" data-url="${escapeHtml(video.url)}" data-index="${index}" title="Download">
+                <button class="btn btn-download" data-url="${escapeHtml(video.url)}" data-index="${index}" title="${t('download')}">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M12 3V16M12 16L7 11M12 16L17 11M3 21H21" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
@@ -161,10 +326,10 @@
             { type: "DOWNLOAD_SEGMENTS", tabId: currentTabId },
             (response) => {
                 if (response?.success) {
-                    showNotification('✅ Видео скачано: ' + response.filename);
+                    showNotification(t('downloadSuccess') + response.filename, 'success');
                     updateStatus();
                 } else {
-                    showNotification('❌ Ошибка: ' + (response?.error || 'Неизвестная ошибка'));
+                    showNotification(t('downloadError') + (response?.error || 'Unknown error'), 'error');
                 }
             }
         );
@@ -176,9 +341,9 @@
             { type: "DOWNLOAD_DIRECT", url: url, tabId: currentTabId },
             (response) => {
                 if (response?.success) {
-                    showNotification('✅ Видео скачано: ' + response.filename);
+                    showNotification(t('downloadSuccess') + response.filename, 'success');
                 } else {
-                    showNotification('❌ Ошибка: ' + (response?.error || 'Неизвестная ошибка'));
+                    showNotification(t('downloadError') + (response?.error || 'Unknown error'), 'error');
                 }
             }
         );
@@ -186,12 +351,12 @@
 
     // Очистить данные
     function clearData() {
-        if (confirm('Очистить все собранные данные?')) {
+        if (confirm(t('clearConfirm'))) {
             chrome.runtime.sendMessage(
                 { type: "CLEAR_DATA", tabId: currentTabId },
                 (response) => {
                     if (response?.success) {
-                        showNotification('✅ Данные очищены');
+                        showNotification(t('dataCleared'), 'success');
                         updateStatus();
                     }
                 }
@@ -200,9 +365,37 @@
     }
 
     // Показать уведомление
-    function showNotification(message) {
-        // Простое уведомление через alert (можно улучшить)
-        alert(message);
+    function showNotification(message, type = 'info') {
+        // Удаляем предыдущее уведомление если есть
+        const existing = document.querySelector('.notification');
+        if (existing) {
+            existing.remove();
+        }
+
+        // Создаём новое уведомление
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        
+        // Иконка в зависимости от типа
+        let icon = '';
+        if (type === 'success') {
+            icon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        } else if (type === 'error') {
+            icon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 8V12M12 16H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        } else {
+            icon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13 16H12V12H11M12 8H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        }
+        
+        notification.innerHTML = `${icon}<span>${message}</span>`;
+        document.body.appendChild(notification);
+
+        // Автоматически скрываем через 3 секунды
+        setTimeout(() => {
+            notification.classList.add('hiding');
+            setTimeout(() => {
+                notification.remove();
+            }, 300);
+        }, 3000);
     }
 
     // Показать информацию о MP4
@@ -213,26 +406,27 @@
                 if (response?.success) {
                     const info = response.info;
                     const infoText = `
-📊 Информация о MP4:
+${t('mp4InfoTitle')}
 
-🎬 Длительность: ${info.duration ? (info.duration / info.timescale).toFixed(2) + 's' : 'N/A'}
-📹 Треков: ${info.tracks?.length || 0}
-📦 Бренд: ${info.brand || 'N/A'}
+${t('duration')}${info.duration ? (info.duration / info.timescale).toFixed(2) + 's' : 'N/A'}
+${t('tracks')}${info.tracks?.length || 0}
+${t('brand')}${info.brand || 'N/A'}
 
 ${info.tracks?.map((track, i) => `
-Трек ${i + 1}:
+${t('track')} ${i + 1}:
   - ID: ${track.id}
-  - Тип: ${track.type}
-  - Codec: ${track.codec}
-  - Длительность: ${track.duration ? (track.duration / track.timescale).toFixed(2) + 's' : 'N/A'}
-  ${track.video ? `- Разрешение: ${track.video.width}x${track.video.height}` : ''}
-  ${track.audio ? `- Каналов: ${track.audio.channel_count}, Sample rate: ${track.audio.sample_rate}` : ''}
-`).join('\n') || 'Нет информации о треках'}
+  - ${t('type')}: ${track.type}
+  - ${t('codec')}: ${track.codec}
+  - ${t('duration')}${track.duration ? (track.duration / track.timescale).toFixed(2) + 's' : 'N/A'}
+  ${track.video ? `- ${t('resolution')}: ${track.video.width}x${track.video.height}` : ''}
+  ${track.audio ? `- ${t('channels')}: ${track.audio.channel_count}, ${t('sampleRate')}: ${track.audio.sample_rate}` : ''}
+`).join('\n') || t('noTrackInfo')}
                     `.trim();
                     
+                    // Используем confirm вместо alert для MP4 info (это большой текст)
                     alert(infoText);
                 } else {
-                    showNotification('❌ ' + (response?.error || 'Не удалось получить информацию'));
+                    showNotification(t('downloadError') + (response?.error || t('noInfo')), 'error');
                 }
             }
         );
@@ -245,7 +439,57 @@ ${info.tracks?.map((track, i) => `
     elements.clearData.addEventListener('click', clearData);
     elements.showInfo.addEventListener('click', showMP4Info);
 
+    // Переключатель языков
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const lang = btn.dataset.lang;
+            
+            console.log('[Lang] Клик на кнопку:', lang);
+            
+            // Обновляем currentLang СРАЗУ
+            currentLang = lang;
+            
+            // Обновляем активную кнопку
+            document.querySelectorAll('.lang-btn').forEach(b => {
+                b.classList.toggle('active', b.dataset.lang === lang);
+            });
+            
+            // Сохраняем в storage
+            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                chrome.storage.local.set({ language: lang }, () => {
+                    console.log('[Lang] Язык сохранён в chrome.storage:', lang);
+                });
+            } else {
+                // Fallback - используем localStorage
+                localStorage.setItem('language', lang);
+                console.log('[Lang] Язык сохранён в localStorage:', lang);
+            }
+            
+            // Применяем переводы
+            applyTranslations();
+            
+            // Обновляем список видео с новым языком (если API доступен)
+            if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage && currentTabId) {
+                chrome.runtime.sendMessage(
+                    { type: "GET_STATUS", tabId: currentTabId },
+                    (response) => {
+                        if (chrome.runtime.lastError) {
+                            console.error('Ошибка получения статуса:', chrome.runtime.lastError);
+                            return;
+                        }
+                        if (response) {
+                            updateUI(response);
+                        }
+                    }
+                );
+            } else {
+                console.log('[Lang] Пропускаем обновление статуса (API недоступен или нет tabId)');
+            }
+        });
+    });
+
     // Инициализация
+    loadLanguage();
     updateStatus();
     updateInterval = setInterval(updateStatus, 1000);
 

@@ -3,6 +3,11 @@
   "name": "Yaro Video Downloader",
   "version": "1.0",
   "description": "Скачивает обычные видео и собирает защищённые сегменты в MP4.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
   "permissions": [
     "downloads",
     "scripting",
@@ -18,7 +23,12 @@
   },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Video Downloader"
+    "default_title": "Yaro Video Downloader",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
   },
   "content_scripts": [
     {

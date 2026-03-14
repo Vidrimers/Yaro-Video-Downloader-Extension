@@ -191,10 +191,16 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     }
 
     if (msg.type === "GET_MP4_INFO") {
-        const data = videoData.get(tabId);
-        if (!data || !data.mp4Builder) {
-            sendResponse({ success: false, error: "Нет данных для анализа" });
-            return;
+        const data = initTabData(tabId); // Инициализируем если нужно
+        
+        if (!data.mp4Builder || !data.mp4Builder.isInitialized) {
+            sendResponse({ success: false, error: "MP4Builder не инициализирован. Начните запись сегментов." });
+            return true;
+        }
+
+        if (data.segments.length === 0) {
+            sendResponse({ success: false, error: "Нет сегментов для анализа. Запишите видео сначала." });
+            return true;
         }
 
         data.mp4Builder.getInfo()
