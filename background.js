@@ -52,8 +52,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg.type === "VIDEO_MIME") {
         const data = initTabData(tabId);
         data.mimeType = msg.mime;
-        data.isRecording = true;
-        data.startTime = Date.now();
+        // НЕ включаем запись автоматически! Только по кнопке "Начать"
         log(`MIME тип установлен для таба ${tabId}: ${msg.mime}`);
         sendResponse({ success: true });
     }
