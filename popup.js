@@ -81,10 +81,10 @@
         if (videos.length === 0) {
             elements.videoList.innerHTML = `
                 <div class="empty-state">
-                    <svg viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
+                    <svg class="empty-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M15 10L19.553 7.724C20.237 7.382 21 7.867 21 8.618V15.382C21 16.133 20.237 16.618 19.553 16.276L15 14M5 18H13C14.105 18 15 17.105 15 16V8C15 6.895 14.105 6 13 6H5C3.895 6 3 6.895 3 8V16C3 17.105 3.895 18 5 18Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
-                    <p>Видео не найдены<br>Откройте страницу с видео</p>
+                    <div class="empty-text">No videos detected<br>Open a page with video content</div>
                 </div>
             `;
             return;
@@ -92,22 +92,29 @@
 
         elements.videoList.innerHTML = videos.map((video, index) => `
             <div class="video-item">
+                <div class="video-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M15 10L19.553 7.724C20.237 7.382 21 7.867 21 8.618V15.382C21 16.133 20.237 16.618 19.553 16.276L15 14M5 18H13C14.105 18 15 17.105 15 16V8C15 6.895 14.105 6 13 6H5C3.895 6 3 6.895 3 8V16C3 17.105 3.895 18 5 18Z" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
                 <div class="video-info">
                     <div class="video-title" title="${escapeHtml(video.title)}">
                         ${escapeHtml(video.title)}
                     </div>
                     <div class="video-type">
-                        ${video.type === 'direct' ? '🔗 Прямая ссылка' : '🔒 Защищённое'}
+                        <span class="type-badge">${video.type === 'direct' ? 'DIRECT' : 'STREAM'}</span>
                     </div>
                 </div>
-                <button class="btn btn-primary btn-small" data-url="${escapeHtml(video.url)}" data-index="${index}">
-                    ⬇ Скачать
+                <button class="btn btn-download" data-url="${escapeHtml(video.url)}" data-index="${index}" title="Download">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 3V16M12 16L7 11M12 16L17 11M3 21H21" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
                 </button>
             </div>
         `).join('');
 
         // Добавляем обработчики для кнопок скачивания
-        elements.videoList.querySelectorAll('.btn').forEach(btn => {
+        elements.videoList.querySelectorAll('.btn-download').forEach(btn => {
             btn.addEventListener('click', () => {
                 const url = btn.dataset.url;
                 downloadDirect(url);
