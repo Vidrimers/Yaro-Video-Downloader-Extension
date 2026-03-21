@@ -41,7 +41,8 @@
             noSegmentsForInfo: 'Нет сегментов для анализа. Запишите видео сначала.',
             mp4BuilderNotInit: 'MP4Builder не инициализирован. Начните запись сегментов.',
             recordingStarted: 'Запись начата',
-            recordingStopped: 'Запись остановлена'
+            recordingStopped: 'Запись остановлена',
+            supportAuthor: 'Поддержать автора'
         },
         en: {
             segments: 'Segments',
@@ -76,7 +77,8 @@
             noSegmentsForInfo: 'No segments to analyze. Record video first.',
             mp4BuilderNotInit: 'MP4Builder not initialized. Start recording segments.',
             recordingStarted: 'Recording started',
-            recordingStopped: 'Recording stopped'
+            recordingStopped: 'Recording stopped',
+            supportAuthor: 'Support Author'
         }
     };
 
@@ -274,7 +276,7 @@
                         <span class="type-badge">${video.type === 'direct' ? t('direct') : t('stream')}</span>
                     </div>
                 </div>
-                <button class="btn btn-download" data-url="${escapeHtml(video.url)}" data-index="${index}" title="${t('download')}">
+                <button class="btn btn-download" data-url="${escapeHtml(video.url)}" data-title="${escapeHtml(video.title)}" data-index="${index}" title="${t('download')}">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M12 3V16M12 16L7 11M12 16L17 11M3 21H21" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
@@ -286,7 +288,8 @@
         elements.videoList.querySelectorAll('.btn-download').forEach(btn => {
             btn.addEventListener('click', () => {
                 const url = btn.dataset.url;
-                downloadDirect(url);
+                const title = btn.dataset.title;
+                downloadDirect(url, title);
             });
         });
     }
@@ -359,20 +362,43 @@
         chrome.runtime.sendMessage(
             { type: "DOWNLOAD_SEGMENTS", tabId: currentTabId },
             (response) => {
-                if (response?.success) {
-                    showNotification(t('downloadSuccess') + response.filename, 'success');
-                    updateStatus();
-                } else {
+                if (!response?.success) {
                     showNotification(t('downloadError') + (response?.error || 'Unknown error'), 'error');
+                    return;
                 }
+
+                // Firefox: SW не может создать blob URL, делаем это здесь
+                if (response.needsClientDownload) {
+                    try {
+                        const buffer = new Uint8Array(response.bufferArray).buffer;
+                        const blob = new Blob([buffer], { type: response.mimeType });
+                        const url = URL.createObjectURL(blob);
+
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = response.filename;
+                        a.click();
+
+                        setTimeout(() => URL.revokeObjectURL(url), 1000);
+                        showNotification(t('downloadSuccess') + response.filename, 'success');
+                        updateStatus();
+                    } catch (err) {
+                        showNotification(t('downloadError') + err.message, 'error');
+                    }
+                    return;
+                }
+
+                // Chrome / Opera / Edge — скачивание уже запущено в SW
+                showNotification(t('downloadSuccess') + response.filename, 'success');
+                updateStatus();
             }
         );
     }
 
     // Скачать прямое видео
-    function downloadDirect(url) {
+    function downloadDirect(url, title) {
         chrome.runtime.sendMessage(
-            { type: "DOWNLOAD_DIRECT", url: url, tabId: currentTabId },
+            { type: "DOWNLOAD_DIRECT", url: url, title: title, tabId: currentTabId },
             (response) => {
                 if (response?.success) {
                     showNotification(t('downloadSuccess') + response.filename, 'success');

@@ -1,6 +1,17 @@
 // Импорт mp4box.js
 importScripts('mp4box.all.js', 'mp4-builder.js');
 
+// Очистка имени файла от недопустимых символов
+function sanitizeFilename(filename) {
+    // Убираем недопустимые символы для имени файла
+    return filename
+        .replace(/[<>:"/\\|?*\x00-\x1F]/g, '') // Недопустимые символы Windows/Linux
+        .replace(/\s+/g, ' ') // Множественные пробелы в один
+        .trim()
+        .substring(0, 200) // Ограничиваем длину
+        || 'video'; // Fallback если имя пустое
+}
+
 // Хранилище для сегментов видео по табам
 const videoData = new Map();
 
@@ -125,32 +136,63 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
                     log('MP4 собран через mp4Builder');
                 } catch (error) {
                     log(`mp4Builder не смог собрать, используем простую конкатенацию: ${error.message}`);
-                    // Fallback: простая конкатенация
                     const blob = new Blob(data.segments, { type: data.mimeType || "video/mp4" });
                     finalBuffer = await blob.arrayBuffer();
                 }
 
-                const blob = new Blob([finalBuffer], { type: data.mimeType || "video/mp4" });
-                const url = URL.createObjectURL(blob);
-                const filename = `video_${Date.now()}.mp4`;
+                // Используем название страницы или первого видео
+                let videoTitle = 'video';
+                if (data.videos && data.videos.length > 0) {
+                    videoTitle = sanitizeFilename(data.videos[0].title);
+                }
+                const filename = `${videoTitle}_${Date.now()}.mp4`;
+                const mimeType = data.mimeType || "video/mp4";
 
-                chrome.downloads.download({
-                    url: url,
-                    filename: filename,
-                    saveAs: true
-                }, (downloadId) => {
-                    if (chrome.runtime.lastError) {
-                        log(`Ошибка скачивания: ${chrome.runtime.lastError.message}`);
-                        sendResponse({ success: false, error: chrome.runtime.lastError.message });
-                    } else {
-                        log(`Видео скачано: ${filename}, ID: ${downloadId}`);
-                        // Очищаем данные после скачивания
-                        data.segments = [];
-                        data.isRecording = false;
-                        data.mp4Builder.reset();
-                        sendResponse({ success: true, filename: filename });
-                    }
-                });
+                // Проверяем, доступен ли URL.createObjectURL в этом контексте (недоступен в Firefox SW)
+                const canUseObjectURL = typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function';
+
+                if (canUseObjectURL) {
+                    // Chrome / Opera / Edge — создаём blob URL прямо в SW
+                    const blob = new Blob([finalBuffer], { type: mimeType });
+                    const url = URL.createObjectURL(blob);
+
+                    chrome.downloads.download({
+                        url: url,
+                        filename: filename,
+                        saveAs: true
+                    }, (downloadId) => {
+                        setTimeout(() => {
+                            URL.revokeObjectURL(url);
+                            log(`Blob URL освобождён для ${filename}`);
+                        }, 1000);
+
+                        if (chrome.runtime.lastError) {
+                            log(`Ошибка скачивания: ${chrome.runtime.lastError.message}`);
+                            URL.revokeObjectURL(url);
+                            sendResponse({ success: false, error: chrome.runtime.lastError.message });
+                        } else {
+                            log(`Видео скачано: ${filename}, ID: ${downloadId}`);
+                            data.segments = [];
+                            data.isRecording = false;
+                            data.mp4Builder.reset();
+                            sendResponse({ success: true, filename: filename });
+                        }
+                    });
+                } else {
+                    // Firefox — передаём бинарные данные в popup, там создадим blob URL
+                    log('URL.createObjectURL недоступен в SW (Firefox), передаём данные в popup');
+                    const bufferArray = Array.from(new Uint8Array(finalBuffer));
+                    data.segments = [];
+                    data.isRecording = false;
+                    data.mp4Builder.reset();
+                    sendResponse({
+                        success: true,
+                        needsClientDownload: true,
+                        bufferArray: bufferArray,
+                        mimeType: mimeType,
+                        filename: filename
+                    });
+                }
             } catch (error) {
                 log(`Ошибка при создании файла: ${error.message}`);
                 sendResponse({ success: false, error: error.message });
@@ -161,7 +203,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     }
 
     if (msg.type === "DOWNLOAD_DIRECT") {
-        const filename = `video_${Date.now()}.mp4`;
+        // Получаем название видео из сообщения или используем дефолтное
+        const videoTitle = msg.title ? sanitizeFilename(msg.title) : 'video';
+        const filename = `${videoTitle}_${Date.now()}.mp4`;
+        
         chrome.downloads.download({
             url: msg.url,
             filename: filename,
