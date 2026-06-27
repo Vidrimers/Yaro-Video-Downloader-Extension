@@ -553,12 +553,210 @@ ${t('track')} ${i + 1}:
     updateStatus();
     updateInterval = setInterval(updateStatus, 1000);
 
-    // Очистка при закрытии popup
-    window.addEventListener('unload', () => {
-        if (updateInterval) {
-            clearInterval(updateInterval);
+    // ===== Server Download (YouTube/Instagram) =====
+    const SERVER_API_URL = 'https://vidrimers.site/dl';
+    const SERVER_API_KEY = 'yaro-ext-api-k8x2m9p4';
+
+    let serverVideoInfo = null;
+    let selectedFormat = null;
+    let serverPageUrl = null;
+
+    function isYouTubeUrl(url) {
+        if (!url) return false;
+        try {
+            const u = new URL(url);
+            const h = u.hostname.toLowerCase();
+            if (['youtube.com', 'www.youtube.com', 'm.youtube.com'].includes(h)) {
+                if (u.pathname === '/watch' && u.searchParams.has('v')) return true;
+                return /^\/shorts\//.test(u.pathname);
+            }
+            if (h === 'youtu.be') return u.pathname.length > 1;
+            return false;
+        } catch { return false; }
+    }
+
+    function isInstagramUrl(url) {
+        if (!url) return false;
+        try {
+            const u = new URL(url);
+            const h = u.hostname.toLowerCase();
+            if (!['instagram.com', 'www.instagram.com'].includes(h)) return false;
+            return /^\/(reels?|p|stories)\//.test(u.pathname);
+        } catch { return false; }
+    }
+
+    async function fetchServerInfo(url) {
+        const res = await fetch(`${SERVER_API_URL}/api/info`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-API-Key': SERVER_API_KEY
+            },
+            body: JSON.stringify({ url })
+        });
+        if (!res.ok) throw new Error(`Server error: ${res.status}`);
+        return res.json();
+    }
+
+    async function serverDownload(url, options = {}) {
+        const res = await fetch(`${SERVER_API_URL}/api/download`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-API-Key': SERVER_API_KEY
+            },
+            body: JSON.stringify({ url, ...options })
+        });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.error || `Server error: ${res.status}`);
         }
-    });
+        return res.json();
+    }
+
+    async function initServerSection() {
+        try {
+            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            if (!tab || !tab.url) return;
+
+            const url = tab.url;
+            if (!isYouTubeUrl(url) && !isInstagramUrl(url)) return;
+
+            const section = document.getElementById('serverSection');
+            const loading = document.getElementById('serverLoading');
+            const error = document.getElementById('serverError');
+            const info = document.getElementById('serverVideoInfo');
+
+            section.style.display = 'block';
+            loading.style.display = 'flex';
+            error.style.display = 'none';
+            info.style.display = 'none';
+
+            serverPageUrl = url;
+
+            try {
+                serverVideoInfo = await fetchServerInfo(url);
+                serverVideoInfo.url = url;
+                loading.style.display = 'none';
+                info.style.display = 'block';
+                renderServerVideoInfo();
+            } catch (e) {
+                loading.style.display = 'none';
+                error.style.display = 'block';
+                error.textContent = e.message || 'Failed to load video info';
+            }
+        } catch (e) {
+            console.warn('[Server] Init failed:', e);
+        }
+    }
+
+    function renderServerVideoInfo() {
+        const data = serverVideoInfo;
+        if (!data) return;
+
+        document.getElementById('serverVideoTitle').textContent = data.title || 'Video';
+        const meta = [];
+        if (data.duration) {
+            const m = Math.floor(data.duration / 60);
+            const s = Math.floor(data.duration % 60);
+            meta.push(`${m}:${s.toString().padStart(2, '0')}`);
+        }
+        if (data.uploader) meta.push(data.uploader);
+        document.getElementById('serverVideoMeta').textContent = meta.join(' · ');
+
+        // SponsorBlock
+        const sbSection = document.getElementById('serverSponsorBlock');
+        const sbSegments = document.getElementById('sbSegments');
+        if (data.sponsorBlock && data.sponsorBlock.segments && data.sponsorBlock.segments.length > 0) {
+            sbSection.style.display = 'block';
+            const segs = data.sponsorBlock.segments.map(s =>
+                `${s.categoryName}: ${s.startFormatted} - ${s.endFormatted}`
+            ).join('\n');
+            sbSegments.textContent = `${data.sponsorBlock.totalSegments} segments (${data.sponsorBlock.totalDurationFormatted})`;
+        } else {
+            sbSection.style.display = 'none';
+        }
+
+        // Quality buttons
+        const qualityContainer = document.getElementById('serverQuality');
+        qualityContainer.innerHTML = '';
+        if (data.formats && data.formats.length > 0) {
+            data.formats.forEach((f, i) => {
+                const btn = document.createElement('button');
+                btn.className = 'quality-btn' + (i === 0 ? ' selected' : '');
+                btn.textContent = f.quality + (f.needsMerge ? ' (merged)' : '');
+                btn.dataset.formatId = f.formatId;
+                btn.dataset.quality = f.height || '';
+                btn.addEventListener('click', () => {
+                    qualityContainer.querySelectorAll('.quality-btn').forEach(b => b.classList.remove('selected'));
+                    btn.classList.add('selected');
+                    selectedFormat = f;
+                });
+                qualityContainer.appendChild(btn);
+            });
+            selectedFormat = data.formats[0];
+        }
+    }
+
+    async function handleServerDownload() {
+        if (!serverVideoInfo || !selectedFormat) return;
+
+        const btn = document.getElementById('serverDownloadBtn');
+        const origText = btn.querySelector('span').textContent;
+        btn.disabled = true;
+        btn.querySelector('span').textContent = 'Processing...';
+
+        try {
+            const trimStart = document.getElementById('trimStart').value.trim();
+            const trimEnd = document.getElementById('trimEnd').value.trim();
+            const removeAds = document.getElementById('removeAdsToggle').checked;
+
+            const options = {
+                formatId: selectedFormat.formatId,
+                quality: selectedFormat.quality
+            };
+
+            if (removeAds) options.removeAds = true;
+            if (trimStart) options.trimStart = parseTimeToSeconds(trimStart);
+            if (trimEnd) options.trimEnd = parseTimeToSeconds(trimEnd);
+
+            const result = await serverDownload(serverPageUrl || serverVideoInfo.url, options);
+
+            if (result.downloadUrl) {
+                chrome.downloads.download({
+                    url: result.downloadUrl,
+                    filename: result.filename || 'video.mp4',
+                    saveAs: true
+                }, (downloadId) => {
+                    if (chrome.runtime.lastError) {
+                        showNotification('Download error: ' + chrome.runtime.lastError.message, 'error');
+                    } else {
+                        showNotification('Download started: ' + (result.filename || 'video.mp4'), 'success');
+                    }
+                    btn.disabled = false;
+                    btn.querySelector('span').textContent = origText;
+                });
+            }
+        } catch (e) {
+            showNotification('Error: ' + e.message, 'error');
+            btn.disabled = false;
+            btn.querySelector('span').textContent = origText;
+        }
+    }
+
+    function parseTimeToSeconds(str) {
+        if (!str) return undefined;
+        const parts = str.split(':').map(Number);
+        if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+        if (parts.length === 2) return parts[0] * 60 + parts[1];
+        return parts[0] || undefined;
+    }
+
+    // Bind server download button
+    document.getElementById('serverDownloadBtn').addEventListener('click', handleServerDownload);
+
+    // Init server section on load
+    initServerSection();
 
     console.log('[Video Downloader] Popup инициализирован');
 })();
