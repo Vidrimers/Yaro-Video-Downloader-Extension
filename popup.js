@@ -553,6 +553,66 @@ ${t('track')} ${i + 1}:
     updateStatus();
     updateInterval = setInterval(updateStatus, 1000);
 
+    // ===== Version & Update Checker =====
+    const CURRENT_VERSION = chrome.runtime.getManifest().version;
+    const GITHUB_REPO = 'Vidrimers/Yaro-Video-Downloader-Extension';
+
+    document.getElementById('currentVersion').textContent = `v${CURRENT_VERSION}`;
+
+    async function checkForUpdates() {
+        try {
+            const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`);
+            if (!res.ok) return;
+
+            const release = await res.json();
+            const latestVersion = (release.tag_name || '').replace(/^v/, '');
+
+            if (!latestVersion || latestVersion === CURRENT_VERSION) return;
+
+            // Compare versions
+            if (compareVersions(latestVersion, CURRENT_VERSION) <= 0) return;
+
+            // Show update banner
+            const banner = document.getElementById('updateBanner');
+            document.getElementById('updateTitle').textContent = `New version: v${latestVersion}`;
+            document.getElementById('updateVersion').textContent = `Current: v${CURRENT_VERSION} → Latest: v${latestVersion}`;
+
+            const changelog = release.body || '';
+            const changelogEl = document.getElementById('updateChangelog');
+            if (changelog) {
+                changelogEl.textContent = changelog.substring(0, 200) + (changelog.length > 200 ? '...' : '');
+            } else {
+                changelogEl.style.display = 'none';
+            }
+
+            // Find .zip download URL
+            const zipAsset = (release.assets || []).find(a => a.name.endsWith('.zip'));
+            if (zipAsset) {
+                document.getElementById('updateDownloadBtn').href = zipAsset.browser_download_url;
+            } else {
+                document.getElementById('updateDownloadBtn').href = release.html_url;
+            }
+
+            banner.style.display = 'block';
+        } catch (e) {
+            console.warn('[Update check] Failed:', e);
+        }
+    }
+
+    function compareVersions(a, b) {
+        const pa = a.split('.').map(Number);
+        const pb = b.split('.').map(Number);
+        for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+            const na = pa[i] || 0;
+            const nb = pb[i] || 0;
+            if (na > nb) return 1;
+            if (na < nb) return -1;
+        }
+        return 0;
+    }
+
+    checkForUpdates();
+
     // ===== Server Download (YouTube/Instagram) =====
     const SERVER_API_URL = 'https://vidrimers.site/dl';
     const SERVER_API_KEY = 'yaro-ext-api-k8x2m9p4';

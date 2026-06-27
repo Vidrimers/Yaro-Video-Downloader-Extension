@@ -663,6 +663,63 @@
             width: 100%;
             padding: 12px !important;
         }
+
+        /* Update banner */
+        .update-banner {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.1) 100%);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            margin: 0;
+            padding: 12px 16px;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        .update-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #10b981;
+            margin-bottom: 6px;
+        }
+
+        .update-version {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 6px;
+        }
+
+        .update-changelog {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.4);
+            line-height: 1.5;
+            margin-bottom: 8px;
+            max-height: 60px;
+            overflow-y: auto;
+        }
+
+        .update-download-btn {
+            display: inline-block;
+            padding: 6px 12px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: #fff;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .update-download-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        }
+
+        #currentVersion {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.4);
+            margin-top: 2px;
+        }
     </style>
 </head>
 <body>
@@ -675,7 +732,25 @@
             <img src="icons/icon48.png" class="logo-icon" alt="Yaro Video Downloader">
             <div class="logo-text">
                 <h1>Yaro Video Downloader</h1>
+                <p id="currentVersion">v1.1</p>
             </div>
+        </div>
+    </div>
+
+    <!-- Update notification -->
+    <div class="update-banner" id="updateBanner" style="display:none;">
+        <div class="update-content">
+            <div class="update-header">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
+                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                </svg>
+                <span id="updateTitle">New version available</span>
+            </div>
+            <div class="update-version" id="updateVersion"></div>
+            <div class="update-changelog" id="updateChangelog"></div>
+            <a class="update-download-btn" id="updateDownloadBtn" href="#" target="_blank">
+                Download update
+            </a>
         </div>
     </div>
 
