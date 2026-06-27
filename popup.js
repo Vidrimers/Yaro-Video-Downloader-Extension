@@ -590,7 +590,8 @@ ${t('track')} ${i + 1}:
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-API-Key': SERVER_API_KEY
+                'X-API-Key': SERVER_API_KEY,
+                'X-Extension-Version': chrome.runtime.getManifest().version
             },
             body: JSON.stringify({ url })
         });
@@ -603,7 +604,8 @@ ${t('track')} ${i + 1}:
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-API-Key': SERVER_API_KEY
+                'X-API-Key': SERVER_API_KEY,
+                'X-Extension-Version': chrome.runtime.getManifest().version
             },
             body: JSON.stringify({ url, ...options })
         });
