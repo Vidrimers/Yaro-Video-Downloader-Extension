@@ -726,9 +726,17 @@ ${t('track')} ${i + 1}:
             if (statsGrid) statsGrid.style.display = 'none';
 
             const section = document.getElementById('serverSection');
+            const titleEl = document.getElementById('serverSectionTitle');
             const loading = document.getElementById('serverLoading');
             const error = document.getElementById('serverError');
             const info = document.getElementById('serverVideoInfo');
+
+            // Set title based on platform
+            if (isYouTubeUrl(url)) {
+                titleEl.textContent = 'YouTube';
+            } else if (isInstagramUrl(url)) {
+                titleEl.textContent = 'Instagram';
+            }
 
             section.style.display = 'block';
             loading.style.display = 'flex';
