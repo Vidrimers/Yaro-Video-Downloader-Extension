@@ -63,7 +63,6 @@ class MP4Builder {
         console.log(`[MP4Builder] Сегмент добавлен. Размер: ${arrayBuffer.byteLength}, Всего: ${this.segments.length}`);
     }
 
-    // Сборка финального MP4
     async build() {
         return new Promise((resolve, reject) => {
             if (this.segments.length === 0) {
@@ -72,22 +71,8 @@ class MP4Builder {
             }
 
             try {
-                console.log(`[MP4Builder] Начинаем сборку из ${this.segments.length} сегментов`);
-
-                // Метод 1: Пробуем использовать mp4box для правильной сборки
-                if (this.mp4boxfile && this.info) {
-                    console.log('[MP4Builder] Используем MP4Box для сборки');
-                    this.buildWithMP4Box()
-                        .then(resolve)
-                        .catch((error) => {
-                            console.warn('[MP4Builder] MP4Box сборка не удалась, используем конкатенацию:', error.message);
-                            resolve(this.buildSimple());
-                        });
-                } else {
-                    // Метод 2: Простая конкатенация (fallback)
-                    console.log('[MP4Builder] Используем простую конкатенацию');
-                    resolve(this.buildSimple());
-                }
+                console.log(`[MP4Builder] Сборка из ${this.segments.length} сегментов (конкатенация fMP4)`);
+                resolve(this.buildSimple());
             } catch (error) {
                 console.error('[MP4Builder] Ошибка сборки:', error);
                 reject(error);
@@ -95,63 +80,7 @@ class MP4Builder {
         });
     }
 
-    // Сборка с использованием MP4Box (продвинутый метод)
-    async buildWithMP4Box() {
-        return new Promise((resolve, reject) => {
-            try {
-                // Финализируем парсинг
-                this.mp4boxfile.flush();
-
-                // Получаем треки
-                const tracks = this.info.tracks || [];
-                if (tracks.length === 0) {
-                    throw new Error('Нет треков в MP4');
-                }
-
-                console.log(`[MP4Builder] Найдено треков: ${tracks.length}`);
-
-                // Инициализируем сегментацию для каждого трека
-                const segmentedData = [];
-                
-                tracks.forEach(track => {
-                    this.mp4boxfile.setSegmentOptions(track.id, null, {
-                        nbSamples: 1000 // Количество сэмплов на сегмент
-                    });
-                });
-
-                // Обработчик готовых сегментов
-                this.mp4boxfile.onSegment = (id, user, buffer, sampleNum, isLast) => {
-                    segmentedData.push(buffer);
-                    
-                    if (isLast) {
-                        // Собираем все сегменты
-                        const totalLength = segmentedData.reduce((sum, buf) => sum + buf.byteLength, 0);
-                        const result = new Uint8Array(totalLength);
-                        
-                        let offset = 0;
-                        for (const buf of segmentedData) {
-                            result.set(new Uint8Array(buf), offset);
-                            offset += buf.byteLength;
-                        }
-
-                        console.log(`[MP4Builder] MP4Box сборка завершена. Размер: ${totalLength} байт`);
-                        resolve(result.buffer);
-                    }
-                };
-
-                // Запускаем сегментацию
-                const initSegs = this.mp4boxfile.initializeSegmentation();
-                console.log('[MP4Builder] Сегментация инициализирована:', initSegs);
-                
-                this.mp4boxfile.start();
-
-            } catch (error) {
-                reject(error);
-            }
-        });
-    }
-
-    // Простая конкатенация сегментов (fallback метод)
+    // Простая конкатенация сегментов (основной метод для fMP4)
     buildSimple() {
         const totalLength = this.segments.reduce((sum, seg) => sum + seg.byteLength, 0);
         const result = new Uint8Array(totalLength);

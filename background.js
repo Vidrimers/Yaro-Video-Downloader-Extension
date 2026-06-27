@@ -161,11 +161,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
                         filename: filename,
                         saveAs: true
                     }, (downloadId) => {
-                        setTimeout(() => {
-                            URL.revokeObjectURL(url);
-                            log(`Blob URL освобождён для ${filename}`);
-                        }, 1000);
-
                         if (chrome.runtime.lastError) {
                             log(`Ошибка скачивания: ${chrome.runtime.lastError.message}`);
                             URL.revokeObjectURL(url);
@@ -175,6 +170,14 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
                             data.segments = [];
                             data.isRecording = false;
                             data.mp4Builder.reset();
+
+                            chrome.downloads.onChanged.addListener(function onDownload(delta) {
+                                if (delta.id === downloadId && delta.state && delta.state.current === 'complete') {
+                                    chrome.downloads.onChanged.removeListener(onDownload);
+                                    setTimeout(() => URL.revokeObjectURL(url), 2000);
+                                }
+                            });
+
                             sendResponse({ success: true, filename: filename });
                         }
                     });

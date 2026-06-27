@@ -1,5 +1,11 @@
 {
+  "scripts": {
+    "build": "copyfiles -f manifest.json background.js content.js injector.js popup.html popup.js mp4-builder.js mp4box.all.js dist && copyfiles -f icons/* dist/icons"
+  },
   "dependencies": {
     "sharp": "^0.34.5"
+  },
+  "devDependencies": {
+    "copyfiles": "^2.4.1"
   }
 }

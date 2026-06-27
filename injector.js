@@ -18,11 +18,23 @@
 
         const originalAppendBuffer = SourceBuffer.prototype.appendBuffer;
         SourceBuffer.prototype.appendBuffer = function(buffer) {
-            // Отправляем сегмент в content script
-            window.postMessage({
-                type: "VIDEO_SEGMENT",
-                data: Array.from(new Uint8Array(buffer))
-            }, "*");
+            try {
+                let data;
+                if (buffer instanceof ArrayBuffer) {
+                    data = buffer.slice(0);
+                } else if (ArrayBuffer.isView(buffer)) {
+                    data = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+                } else {
+                    data = buffer;
+                }
+
+                window.postMessage({
+                    type: "VIDEO_SEGMENT",
+                    data: data
+                }, "*");
+            } catch (e) {
+                console.warn('[Video Downloader] Не удалось отправить сегмент:', e.message);
+            }
 
             return originalAppendBuffer.call(this, buffer);
         };
