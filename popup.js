@@ -50,7 +50,13 @@
             trimStart: 'Начало',
             trimEnd: 'Конец',
             updateAvailable: 'Доступна новая версия',
-            downloadUpdate: 'Скачать обновление'
+            downloadUpdate: 'Скачать обновление',
+            sbSponsor: 'Реклама',
+            sbSelfpromo: 'Самореклама',
+            sbIntro: 'Интро',
+            sbOutro: 'Аутро',
+            sbInteraction: 'Подписка',
+            sbMusic: 'Музыка не по теме'
         },
         en: {
             segments: 'Segments',
@@ -94,7 +100,13 @@
             trimStart: 'Start',
             trimEnd: 'End',
             updateAvailable: 'New version available',
-            downloadUpdate: 'Download update'
+            downloadUpdate: 'Download update',
+            sbSponsor: 'Sponsor',
+            sbSelfpromo: 'Self-promo',
+            sbIntro: 'Intro',
+            sbOutro: 'Outro',
+            sbInteraction: 'Subscribe',
+            sbMusic: 'Off-topic music'
         }
     };
 
@@ -703,6 +715,16 @@ ${t('track')} ${i + 1}:
             const url = tab.url;
             if (!isYouTubeUrl(url) && !isInstagramUrl(url)) return;
 
+            // Hide local download sections on YouTube/Instagram
+            const localSection = document.getElementById('localSection');
+            const localControls = document.getElementById('localControls');
+            if (localSection) localSection.style.display = 'none';
+            if (localControls) localControls.style.display = 'none';
+
+            // Hide stats grid (segments/recording not relevant)
+            const statsGrid = document.querySelector('.stats-grid');
+            if (statsGrid) statsGrid.style.display = 'none';
+
             const section = document.getElementById('serverSection');
             const loading = document.getElementById('serverLoading');
             const error = document.getElementById('serverError');
@@ -799,14 +821,19 @@ ${t('track')} ${i + 1}:
         try {
             const trimStart = document.getElementById('trimStart').value.trim();
             const trimEnd = document.getElementById('trimEnd').value.trim();
-            const removeAds = document.getElementById('removeAdsToggle').checked;
+
+            // Get selected SponsorBlock categories
+            const selectedCategories = [];
+            document.querySelectorAll('#sbCategories input[type="checkbox"]:checked').forEach(cb => {
+                selectedCategories.push(cb.value);
+            });
 
             const options = {
                 formatId: selectedFormat.formatId,
                 quality: selectedFormat.quality
             };
 
-            if (removeAds) options.removeAds = true;
+            if (selectedCategories.length > 0) options.sponsorCategories = selectedCategories;
             if (trimStart) options.trimStart = parseTimeToSeconds(trimStart);
             if (trimEnd) options.trimEnd = parseTimeToSeconds(trimEnd);
 

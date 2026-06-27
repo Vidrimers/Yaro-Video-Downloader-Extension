@@ -720,6 +720,38 @@
             color: rgba(255, 255, 255, 0.4);
             margin-top: 2px;
         }
+
+        /* SponsorBlock categories */
+        .sb-categories {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-bottom: 12px;
+        }
+
+        .sb-category {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.6);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .sb-category:hover {
+            border-color: rgba(245, 158, 11, 0.3);
+        }
+
+        .sb-category input[type="checkbox"] {
+            accent-color: #f59e0b;
+            width: 12px;
+            height: 12px;
+        }
     </style>
 </head>
 <body>
@@ -774,7 +806,7 @@
         </div>
     </div>
 
-    <div class="content-section">
+    <div class="content-section" id="localSection">
         <div class="section-header">
             <div class="section-title" data-i18n="detectedVideos">Обнаруженные видео</div>
         </div>
@@ -810,10 +842,32 @@
                         <span data-i18n="adSegmentsFound">Найдены рекламные блоки</span>
                     </div>
                     <div class="sb-segments" id="sbSegments"></div>
-                    <label class="sb-toggle">
-                        <input type="checkbox" id="removeAdsToggle" checked>
-                        <span data-i18n="removeAds">Убрать рекламу</span>
-                    </label>
+                    <div class="sb-categories" id="sbCategories">
+                        <label class="sb-category">
+                            <input type="checkbox" name="sb" value="sponsor" checked>
+                            <span data-i18n="sbSponsor">Реклама</span>
+                        </label>
+                        <label class="sb-category">
+                            <input type="checkbox" name="sb" value="selfpromo" checked>
+                            <span data-i18n="sbSelfpromo">Самореклама</span>
+                        </label>
+                        <label class="sb-category">
+                            <input type="checkbox" name="sb" value="intro">
+                            <span data-i18n="sbIntro">Интро</span>
+                        </label>
+                        <label class="sb-category">
+                            <input type="checkbox" name="sb" value="outro">
+                            <span data-i18n="sbOutro">Аутро</span>
+                        </label>
+                        <label class="sb-category">
+                            <input type="checkbox" name="sb" value="interaction">
+                            <span data-i18n="sbInteraction">Подписка</span>
+                        </label>
+                        <label class="sb-category">
+                            <input type="checkbox" name="sb" value="music_offtopic">
+                            <span data-i18n="sbMusic">Музыка не по теме</span>
+                        </label>
+                    </div>
                 </div>
                 <div class="server-quality" id="serverQuality"></div>
                 <div class="server-trim" id="serverTrim">
@@ -838,17 +892,8 @@
             </div>
         </div>
     </div>
-        <div class="video-list" id="videoList">
-            <div class="empty-state">
-                <svg class="empty-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M15 10L19.553 7.724C20.237 7.382 21 7.867 21 8.618V15.382C21 16.133 20.237 16.618 19.553 16.276L15 14M5 18H13C14.105 18 15 17.105 15 16V8C15 6.895 14.105 6 13 6H5C3.895 6 3 6.895 3 8V16C3 17.105 3.895 18 5 18Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                <div class="empty-text" data-i18n="noVideos">Видео не найдены<br>Откройте страницу с видео</div>
-            </div>
-        </div>
-    </div>
 
-    <div class="controls-section">
+    <div class="controls-section" id="localControls">
         <div class="control-group">
             <button class="btn btn-control btn-success" id="startRecording">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
