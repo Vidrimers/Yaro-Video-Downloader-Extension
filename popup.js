@@ -42,7 +42,15 @@
             mp4BuilderNotInit: 'MP4Builder не инициализирован. Начните запись сегментов.',
             recordingStarted: 'Запись начата',
             recordingStopped: 'Запись остановлена',
-            supportAuthor: 'Поддержать автора'
+            supportAuthor: 'Поддержать автора',
+            loadingVideo: 'Загрузка информации...',
+            adSegmentsFound: 'Найдены рекламные блоки',
+            removeAds: 'Убрать рекламу',
+            trimOptional: 'Обрезка (опционально)',
+            trimStart: 'Начало',
+            trimEnd: 'Конец',
+            updateAvailable: 'Доступна новая версия',
+            downloadUpdate: 'Скачать обновление'
         },
         en: {
             segments: 'Segments',
@@ -78,7 +86,15 @@
             mp4BuilderNotInit: 'MP4Builder not initialized. Start recording segments.',
             recordingStarted: 'Recording started',
             recordingStopped: 'Recording stopped',
-            supportAuthor: 'Support Author'
+            supportAuthor: 'Support Author',
+            loadingVideo: 'Loading video info...',
+            adSegmentsFound: 'Ad segments found',
+            removeAds: 'Remove ads',
+            trimOptional: 'Trim (optional)',
+            trimStart: 'Start',
+            trimEnd: 'End',
+            updateAvailable: 'New version available',
+            downloadUpdate: 'Download update'
         }
     };
 
@@ -655,7 +671,10 @@ ${t('track')} ${i + 1}:
             },
             body: JSON.stringify({ url })
         });
-        if (!res.ok) throw new Error(`Server error: ${res.status}`);
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.error || `Ошибка сервера (${res.status})`);
+        }
         return res.json();
     }
 
@@ -671,7 +690,7 @@ ${t('track')} ${i + 1}:
         });
         if (!res.ok) {
             const err = await res.json().catch(() => ({}));
-            throw new Error(err.error || `Server error: ${res.status}`);
+            throw new Error(err.error || `Ошибка сервера (${res.status})`);
         }
         return res.json();
     }
@@ -705,7 +724,16 @@ ${t('track')} ${i + 1}:
             } catch (e) {
                 loading.style.display = 'none';
                 error.style.display = 'block';
-                error.textContent = e.message || 'Failed to load video info';
+                const msg = e.message || '';
+                if (msg.includes('Failed to fetch') || msg.includes('NetworkError')) {
+                    error.textContent = 'Не удалось подключиться к серверу';
+                } else if (msg.includes('500')) {
+                    error.textContent = 'Ошибка на сервере, попробуйте позже';
+                } else if (msg.includes('401')) {
+                    error.textContent = 'Ошибка авторизации';
+                } else {
+                    error.textContent = msg || 'Не удалось загрузить информацию';
+                }
             }
         } catch (e) {
             console.warn('[Server] Init failed:', e);

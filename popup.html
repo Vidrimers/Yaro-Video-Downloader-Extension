@@ -744,12 +744,12 @@
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
                     <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
                 </svg>
-                <span id="updateTitle">New version available</span>
+                <span id="updateTitle" data-i18n="updateAvailable">Доступна новая версия</span>
             </div>
             <div class="update-version" id="updateVersion"></div>
             <div class="update-changelog" id="updateChangelog"></div>
-            <a class="update-download-btn" id="updateDownloadBtn" href="#" target="_blank">
-                Download update
+            <a class="update-download-btn" id="updateDownloadBtn" href="#" target="_blank" data-i18n="downloadUpdate">
+                Скачать обновление
             </a>
         </div>
     </div>
@@ -796,7 +796,7 @@
         <div id="serverContent">
             <div class="server-loading" id="serverLoading" style="display:none;">
                 <div class="spinner"></div>
-                <span>Loading video info...</span>
+                <span data-i18n="loadingVideo">Загрузка информации...</span>
             </div>
             <div class="server-error" id="serverError" style="display:none;"></div>
             <div class="server-video-info" id="serverVideoInfo" style="display:none;">
@@ -807,25 +807,25 @@
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2">
                             <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                         </svg>
-                        <span>Ad segments found</span>
+                        <span data-i18n="adSegmentsFound">Найдены рекламные блоки</span>
                     </div>
                     <div class="sb-segments" id="sbSegments"></div>
                     <label class="sb-toggle">
                         <input type="checkbox" id="removeAdsToggle" checked>
-                        <span>Remove ads</span>
+                        <span data-i18n="removeAds">Убрать рекламу</span>
                     </label>
                 </div>
                 <div class="server-quality" id="serverQuality"></div>
                 <div class="server-trim" id="serverTrim">
-                    <div class="trim-header">Trim (optional)</div>
+                    <div class="trim-header" data-i18n="trimOptional">Обрезка (опционально)</div>
                     <div class="trim-inputs">
                         <div class="trim-field">
-                            <label>Start</label>
+                            <label data-i18n="trimStart">Начало</label>
                             <input type="text" id="trimStart" placeholder="00:00:00">
                         </div>
                         <div class="trim-field">
-                            <label>End</label>
-                            <input type="text" id="trimEnd" placeholder="end">
+                            <label data-i18n="trimEnd">Конец</label>
+                            <input type="text" id="trimEnd" placeholder="конец">
                         </div>
                     </div>
                 </div>
@@ -833,7 +833,7 @@
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M12 3V16M12 16L7 11M12 16L17 11M3 21H21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
-                    <span>Download</span>
+                    <span data-i18n="download">Скачать</span>
                 </button>
             </div>
         </div>
