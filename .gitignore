@@ -55,6 +55,9 @@ plan.txt
 TESTING.md
 QUICKSTART.md
 CHANGELOG.md
+release.ps1
+RELEASE_NOTES.md
+*.zip
 
 
 
