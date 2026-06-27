@@ -825,7 +825,28 @@ ${t('track')} ${i + 1}:
         const btn = document.getElementById('serverDownloadBtn');
         const origText = btn.querySelector('span').textContent;
         btn.disabled = true;
-        btn.querySelector('span').textContent = 'Processing...';
+        btn.querySelector('span').textContent = 'Скачивание на сервере...';
+
+        // Show joke area
+        const jokeEl = document.createElement('div');
+        jokeEl.className = 'server-joke';
+        jokeEl.id = 'serverJoke';
+        btn.parentNode.insertBefore(jokeEl, btn.nextSibling);
+
+        // Fetch jokes periodically
+        let jokeInterval;
+        async function fetchJoke() {
+            try {
+                const res = await fetch(`${SERVER_API_URL}/api/joke`);
+                const data = await res.json();
+                if (data.joke) {
+                    jokeEl.textContent = data.joke;
+                    jokeEl.style.display = 'block';
+                }
+            } catch {}
+        }
+        fetchJoke();
+        jokeInterval = setInterval(fetchJoke, 8000);
 
         try {
             const trimStart = document.getElementById('trimStart').value.trim();
@@ -848,6 +869,9 @@ ${t('track')} ${i + 1}:
 
             const result = await serverDownload(serverPageUrl || serverVideoInfo.url, options);
 
+            clearInterval(jokeInterval);
+            jokeEl.remove();
+
             if (result.downloadUrl) {
                 chrome.downloads.download({
                     url: result.downloadUrl,
@@ -864,6 +888,8 @@ ${t('track')} ${i + 1}:
                 });
             }
         } catch (e) {
+            clearInterval(jokeInterval);
+            jokeEl.remove();
             showNotification('Error: ' + e.message, 'error');
             btn.disabled = false;
             btn.querySelector('span').textContent = origText;
