@@ -779,14 +779,15 @@ ${t('track')} ${i + 1}:
         // SponsorBlock
         const sbSection = document.getElementById('serverSponsorBlock');
         const sbSegments = document.getElementById('sbSegments');
+        const sbCategories = document.getElementById('sbCategories');
         if (data.sponsorBlock && data.sponsorBlock.segments && data.sponsorBlock.segments.length > 0) {
             sbSection.style.display = 'block';
-            const segs = data.sponsorBlock.segments.map(s =>
-                `${s.categoryName}: ${s.startFormatted} - ${s.endFormatted}`
-            ).join('\n');
-            sbSegments.textContent = `${data.sponsorBlock.totalSegments} segments (${data.sponsorBlock.totalDurationFormatted})`;
+            sbSegments.textContent = `${data.sponsorBlock.totalSegments} блоков (${data.sponsorBlock.totalDurationFormatted})`;
+            sbCategories.style.display = 'flex';
         } else {
-            sbSection.style.display = 'none';
+            sbSection.style.display = 'block';
+            sbSegments.textContent = 'Рекламные блоки не найдены';
+            sbCategories.style.display = 'none';
         }
 
         // Quality buttons
