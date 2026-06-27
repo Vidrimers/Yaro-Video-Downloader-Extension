@@ -837,7 +837,9 @@ ${t('track')} ${i + 1}:
         let jokeInterval;
         async function fetchJoke() {
             try {
-                const res = await fetch(`${SERVER_API_URL}/api/joke`);
+                const res = await fetch(`${SERVER_API_URL}/api/joke`, {
+                    headers: { 'X-API-Key': SERVER_API_KEY }
+                });
                 const data = await res.json();
                 if (data.joke) {
                     jokeEl.textContent = data.joke;
