@@ -844,11 +844,18 @@ ${t('track')} ${i + 1}:
                 if (data.joke) {
                     jokeEl.textContent = data.joke;
                     jokeEl.style.display = 'block';
+                    jokeEl.style.cursor = 'pointer';
+                    jokeEl.onclick = () => {
+                        navigator.clipboard.writeText(data.joke).then(() => {
+                            jokeEl.textContent = '✅ Скопировано!';
+                            setTimeout(() => { jokeEl.textContent = data.joke; }, 1500);
+                        });
+                    };
                 }
             } catch {}
         }
         fetchJoke();
-        jokeInterval = setInterval(fetchJoke, 8000);
+        jokeInterval = setInterval(fetchJoke, 15000);
 
         try {
             const trimStart = document.getElementById('trimStart').value.trim();
